@@ -1,0 +1,22 @@
+import type { SVGProps } from 'react';
+
+export const AppLogo = (props: SVGProps<SVGSVGElement>) => (
+  <svg
+    xmlns="http://www.w3.org/2000/svg"
+    viewBox="0 0 24 24"
+    fill="none"
+    stroke="currentColor"
+    strokeWidth="2"
+    strokeLinecap="round"
+    strokeLinejoin="round"
+    {...props}
+  >
+    <path d="M14.5 4h-5L7 7H4a2 2 0 0 0-2 2v9a2 2 0 0 0 2 2h16a2 2 0 0 0 2-2V9a2 2 0 0 0-2-2h-3l-2.5-3z" />
+    <circle cx="12" cy="13" r="3" />
+    <path d="M12 8v1" />
+    <path d="M16 13h-1" />
+    <path d="M8 13h1" />
+    <path d="m13.41 10.59 0.71-.71" />
+    <path d="m9.88 15.41-.71.71" />
+  </svg>
+);
