@@ -13,6 +13,7 @@ import {
 } from '@/components/ui/sheet';
 import { Button } from '@/components/ui/button';
 import { getPoseSuggestions } from '@/app/actions';
+import { Skeleton } from '@/components/ui/skeleton';
 
 interface PoseSuggestionsProps {
   isOpen: boolean;
@@ -93,7 +94,7 @@ export default function PoseSuggestions({ isOpen, onOpenChange, onPoseSelect }: 
                 className="flex flex-col items-center justify-center gap-4 h-48"
               >
                 <Loader className="h-8 w-8 animate-spin text-primary" />
-                <p>Asking our AI director for ideas...</p>
+                <Skeleton className="h-4 w-48" />
               </motion.div>
             )}
 
