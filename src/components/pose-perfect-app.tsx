@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect, useMemo, useCallback, Fragment } from 'react';
+import { useState, useEffect, useMemo, useCallback, Fragment, useRef } from 'react';
 import Image from 'next/image';
 import { AnimatePresence, motion } from 'framer-motion';
 import { Camera, Check, RefreshCw, Sparkles, Users, X } from 'lucide-react';
@@ -21,6 +21,7 @@ import {
   skeletonConnections,
   type Skeleton
 } from '@/lib/pose-data';
+import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
 
 type AppState = 'IDLE' | 'SUGGESTING' | 'GUIDING' | 'CAPTURING' | 'CAPTURED';
 
@@ -34,9 +35,10 @@ export default function PosePerfectApp() {
   const [showSkeleton, setShowSkeleton] = useState(true);
   const [showGhost, setShowGhost] = useState(true);
   const [flash, setFlash] = useState(false);
+  const [hasCameraPermission, setHasCameraPermission] = useState<boolean | null>(null);
+  const videoRef = useRef<HTMLVideoElement>(null);
   const { toast } = useToast();
 
-  const cameraBg = useMemo(() => PlaceHolderImages.find(p => p.id === 'camera-background'), []);
   const ghostImage = useMemo(() => {
     if (!selectedPose) return null;
     const poseId = `pose-${selectedPose.toLowerCase().split(' ').slice(0, 2).join('-')}`;
@@ -47,6 +49,29 @@ export default function PosePerfectApp() {
     () => interpolateSkeletons(initialPose, perfectPose, poseMatch),
     [poseMatch]
   );
+  
+  useEffect(() => {
+    const getCameraPermission = async () => {
+      try {
+        const stream = await navigator.mediaDevices.getUserMedia({video: true});
+        setHasCameraPermission(true);
+
+        if (videoRef.current) {
+          videoRef.current.srcObject = stream;
+        }
+      } catch (error) {
+        console.error('Error accessing camera:', error);
+        setHasCameraPermission(false);
+        toast({
+          variant: 'destructive',
+          title: 'Camera Access Denied',
+          description: 'Please enable camera permissions in your browser settings to use this app.',
+        });
+      }
+    };
+
+    getCameraPermission();
+  }, [toast]);
 
   useEffect(() => {
     if (appState !== 'GUIDING') return;
@@ -119,7 +144,17 @@ export default function PosePerfectApp() {
 
         {/* Camera View */}
         <div className="absolute inset-0">
-          {cameraBg && <Image src={cameraBg.imageUrl} alt="Camera View" layout="fill" objectFit="cover" className="opacity-80" data-ai-hint={cameraBg.imageHint}/>}
+          <video ref={videoRef} className="absolute inset-0 w-full h-full object-cover" autoPlay muted playsInline />
+          {hasCameraPermission === false && (
+            <div className="absolute inset-0 flex items-center justify-center p-8 bg-black/50">
+              <Alert variant="destructive">
+                <AlertTitle>Camera Access Required</AlertTitle>
+                <AlertDescription>
+                  Please allow camera access to use this feature. You may need to grant permissions in your browser settings.
+                </AlertDescription>
+              </Alert>
+            </div>
+          )}
           <AnimatePresence>
             {appState === 'GUIDING' && showGhost && ghostImage && (
               <motion.div
