@@ -137,9 +137,9 @@ export default function PosePerfectApp() {
 
   return (
     <main className="h-screen w-screen bg-black flex items-center justify-center">
-      <div className="relative w-full max-w-[420px] h-full max-h-[840px] bg-background overflow-hidden rounded-lg shadow-2xl">
+      <div className="relative w-full h-screen md:max-w-[420px] md:h-[840px] bg-background overflow-hidden rounded-none md:rounded-lg shadow-2xl">
         {/* Header */}
-        <header className="absolute top-0 left-0 right-0 z-20 flex items-center justify-between p-4 bg-gradient-to-b from-black/50 to-transparent">
+        <header className="absolute top-0 left-0 right-0 z-20 flex items-center justify-between p-3 md:p-4 bg-gradient-to-b from-black/50 to-transparent">
           <div className="flex items-center gap-2 text-white">
             <AppLogo className="h-6 w-6" />
             <h1 className="font-bold text-lg tracking-tight">PosePerfect</h1>
@@ -209,7 +209,7 @@ export default function PosePerfectApp() {
         </div>
 
         {/* UI Overlays */}
-        <div className="absolute inset-0 z-10 flex flex-col justify-between p-6 text-white pointer-events-none">
+        <div className="absolute inset-0 z-10 flex flex-col justify-between p-4 md:p-6 text-white pointer-events-none">
             <AnimatePresence>
             {(appState === 'GUIDING' || appState === 'CAPTURING') && (
                 <motion.div 
@@ -228,7 +228,7 @@ export default function PosePerfectApp() {
             <AnimatePresence>
               {(appState === 'GUIDING' || appState === 'CAPTURING' || appState === 'CAPTURED') && (
                 <motion.div 
-                    className="pointer-events-auto"
+                    className="pointer-events-auto transform scale-90 md:scale-100"
                     initial={{ scale: 0.5, opacity: 0 }}
                     animate={{ scale: 1, opacity: 1 }}
                     exit={{ scale: 0.5, opacity: 0 }}
@@ -268,12 +268,12 @@ export default function PosePerfectApp() {
         </div>
 
         {/* Footer controls */}
-        <footer className={cn(
-            "absolute bottom-0 left-0 right-0 z-20 flex items-center justify-center p-6 bg-gradient-to-t from-black/50 to-transparent",
+          <footer className={cn(
+            "absolute bottom-0 left-0 right-0 z-20 flex items-center justify-center p-4 md:p-6 bg-gradient-to-t from-black/50 to-transparent",
             (appState !== 'IDLE' && appState !== 'SUGGESTING') && 'justify-between'
         )}>
           {appState === 'IDLE' || appState === 'SUGGESTING' ? (
-            <Button size="lg" className="h-16 w-48 rounded-full shadow-lg bg-primary text-primary-foreground hover:bg-primary/90" onClick={() => setIsSheetOpen(true)}>
+            <Button size="lg" className="h-14 w-full max-w-xs md:h-16 md:w-48 rounded-full shadow-lg bg-primary text-primary-foreground hover:bg-primary/90" onClick={() => setIsSheetOpen(true)}>
               <Sparkles className="mr-2 h-5 w-5" />
               Find my Pose
             </Button>
@@ -289,10 +289,10 @@ export default function PosePerfectApp() {
                         {!showGhost && <X className="h-3 w-3 absolute bottom-1 right-1 bg-destructive text-destructive-foreground rounded-full p-0.5" />}
                     </Button>
                 </div>
-                 <Button variant="outline" size="icon" className="h-16 w-16 rounded-full border-4 border-white/50 bg-white/20 hover:bg-white/30">
+                 <Button variant="outline" size="icon" className="h-12 w-12 md:h-16 md:w-16 rounded-full border-4 border-white/50 bg-white/20 hover:bg-white/30">
                     <Camera className="h-7 w-7 text-white" />
                 </Button>
-                <Button variant="ghost" size="icon" className="text-white hover:bg-white/20 rounded-full h-12 w-12" onClick={() => setIsSheetOpen(true)}>
+                <Button variant="ghost" size="icon" className="text-white hover:bg-white/20 rounded-full h-10 w-10 md:h-12 md:w-12" onClick={() => setIsSheetOpen(true)}>
                     <Users className="h-6 w-6"/>
                 </Button>
             </Fragment>

@@ -38,7 +38,7 @@ const peopleOptions = [
 
 function PosePreview({ skeleton }: { skeleton: Skeleton }) {
   return (
-    <svg viewBox="0 0 100 100" width={56} height={72} className="rounded-sm bg-muted/30 p-1">
+    <svg viewBox="0 0 100 100" className="rounded-sm bg-muted/30 p-1 w-14 h-20" preserveAspectRatio="xMidYMid meet">
       {skeletonConnections.map(([a, b]) => {
         const p1 = skeleton[a as keyof Skeleton];
         const p2 = skeleton[b as keyof Skeleton];
