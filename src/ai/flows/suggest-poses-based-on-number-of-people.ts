@@ -17,8 +17,40 @@ const SuggestPosesInputSchema = z.object({
 });
 export type SuggestPosesInput = z.infer<typeof SuggestPosesInputSchema>;
 
+// Each suggested pose is a small pose guide represented as a skeleton matching the app's `Skeleton` shape.
+const KeypointSchema = z.object({
+  x: z.number(),
+  y: z.number(),
+});
+
+const SkeletonSchema = z.object({
+  nose: KeypointSchema,
+  leftEye: KeypointSchema,
+  rightEye: KeypointSchema,
+  leftEar: KeypointSchema,
+  rightEar: KeypointSchema,
+  leftShoulder: KeypointSchema,
+  rightShoulder: KeypointSchema,
+  leftElbow: KeypointSchema,
+  rightElbow: KeypointSchema,
+  leftWrist: KeypointSchema,
+  rightWrist: KeypointSchema,
+  leftHip: KeypointSchema,
+  rightHip: KeypointSchema,
+  leftKnee: KeypointSchema,
+  rightKnee: KeypointSchema,
+  leftAnkle: KeypointSchema,
+  rightAnkle: KeypointSchema,
+});
+
+const SuggestedPoseSchema = z.object({
+  id: z.string().describe('A short id for this pose, suitable for lookups.'),
+  title: z.string().describe('A short human-friendly title for the pose.'),
+  skeleton: SkeletonSchema.describe('A guide skeleton with normalized coordinates (0-100).'),
+});
+
 const SuggestPosesOutputSchema = z.object({
-  suggestedPoses: z.array(z.string()).describe('An array of suggested poses suitable for the detected number of people.'),
+  suggestedPoses: z.array(SuggestedPoseSchema).describe('An array of suggested pose skeletons suitable for the detected number of people.'),
 });
 export type SuggestPosesOutput = z.infer<typeof SuggestPosesOutputSchema>;
 
@@ -30,13 +62,19 @@ const prompt = ai.definePrompt({
   name: 'suggestPosesPrompt',
   input: {schema: SuggestPosesInputSchema},
   output: {schema: SuggestPosesOutputSchema},
-  prompt: `You are an AI posing assistant that specializes in suggesting poses for photos based on the number of people in the frame.
+  prompt: `You are an AI posing assistant that suggests pose guides as skeletons for a camera-based guide.
 
-  Suggest poses that are natural, flattering, and easy to achieve.
+  Requirements:
+  - Return a JSON object that matches the output schema exactly: { "suggestedPoses": [ { "id": string, "title": string, "skeleton": { ... } } ] }.
+  - For each suggested pose provide:
+    - id: short kebab-case identifier (e.g. "confident-stance").
+    - title: short human-friendly title (e.g. "Confident Stance").
+    - skeleton: pose keypoints with numeric x/y coordinates normalized to a 0-100 square (numbers only).
+  - Do NOT include any commentary or extraneous text — return only the JSON matching the schema.
 
   Here's the number of people in the photo: {{{numberOfPeople}}}
 
-  Suggest poses:
+  Provide 3-6 varied poses appropriate for that number of people.
   `,
 });
 

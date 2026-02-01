@@ -1,6 +1,6 @@
 "use client";
 
-import { motion } from 'framer-motion';
+import { motion, useMotionValue, useTransform, animate } from 'framer-motion';
 import { Check, Camera, Sparkles } from 'lucide-react';
 
 interface PoseScoreProps {
@@ -13,8 +13,13 @@ export default function PoseScore({ score, state }: PoseScoreProps) {
   const circumference = 2 * Math.PI * radius;
   const offset = circumference - score * circumference;
 
-  const scoreColor = score > 0.95 ? 'hsl(var(--accent))' : 'hsl(var(--primary))';
-  const displayScore = Math.min(100, Math.floor(score * 100));
+  // Animate score changes smoothly
+  const displayScoreMotion = useMotionValue(score * 100);
+  const displayScore = Math.min(100, Math.floor(displayScoreMotion.get()));
+  // animate whenever `score` changes
+  animate(displayScoreMotion, score * 100, { type: 'spring', stiffness: 200, damping: 20 });
+
+  const scoreColor = score > 0.95 ? 'hsl(var(--accent))' : score > 0.6 ? 'linear-gradient(180deg, hsl(var(--primary)) 0%, hsl(var(--accent)) 100%)' : 'hsl(var(--primary))';
 
   return (
     <div className="relative w-32 h-32 flex items-center justify-center">
@@ -49,23 +54,23 @@ export default function PoseScore({ score, state }: PoseScoreProps) {
         {state === 'CAPTURED' && <motion.div initial={{scale:0.5, opacity:0}} animate={{scale:1, opacity:1}}><Check className="w-12 h-12 text-green-400" /></motion.div>}
         {state === 'GUIDING' && (
           <>
-            <motion.span 
-              key={displayScore} 
-              initial={{ y: 10, opacity: 0 }}
-              animate={{ y: 0, opacity: 1 }}
-              transition={{ duration: 0.2 }}
-            >
-              {displayScore}
-            </motion.span>
+                <motion.span
+                  key={Math.round(score * 100)}
+                  initial={{ y: 10, opacity: 0, scale: 0.9 }}
+                  animate={{ y: 0, opacity: 1, scale: 1 }}
+                  transition={{ type: 'spring', stiffness: 300, damping: 20 }}
+                >
+                  {Math.round(score * 100)}
+                </motion.span>
             <span className="text-xs font-normal text-white/70">MATCH</span>
           </>
         )}
       </div>
-      {score > 0.95 && state === 'GUIDING' && (
+      {score > 0.85 && state === 'GUIDING' && (
         <motion.div
             initial={{ scale: 0.8, opacity: 0 }}
-            animate={{ scale: [1, 1.1, 1], opacity: 1 }}
-            transition={{ duration: 0.5, repeat: Infinity, repeatType: 'reverse' }}
+            animate={{ scale: [1, 1.08, 1], opacity: 1 }}
+            transition={{ duration: 0.8, repeat: Infinity, repeatType: 'reverse', ease: 'easeInOut' }}
             className="absolute -top-2 -right-2 bg-accent text-accent-foreground rounded-full p-2 shadow-lg"
         >
             <Sparkles className="w-4 h-4" />

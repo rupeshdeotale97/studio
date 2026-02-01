@@ -31,7 +31,7 @@ export default function PosePerfectApp() {
   const [score, setScore] = useState(0);
   const [feedback, setFeedback] = useState('Select number of people to start.');
   const [isSheetOpen, setIsSheetOpen] = useState(false);
-  const [selectedPose, setSelectedPose] = useState<string | null>(null);
+  const [selectedPose, setSelectedPose] = useState<{id: string; title: string; skeleton: any} | null>(null);
   const [showSkeleton, setShowSkeleton] = useState(true);
   const [showGhost, setShowGhost] = useState(true);
   const [flash, setFlash] = useState(false);
@@ -41,7 +41,7 @@ export default function PosePerfectApp() {
 
   const ghostImage = useMemo(() => {
     if (!selectedPose) return null;
-    const poseId = `pose-${selectedPose.toLowerCase().split(' ').slice(0, 2).join('-')}`;
+    const poseId = `pose-${selectedPose.id}`;
     return PlaceHolderImages.find(p => p.id.startsWith(poseId)) || null;
   }, [selectedPose]);
 
@@ -53,7 +53,13 @@ export default function PosePerfectApp() {
   useEffect(() => {
     const getCameraPermission = async () => {
       try {
-        const stream = await navigator.mediaDevices.getUserMedia({video: true});
+        // Prefer the back (environment) camera when available, fall back to any camera.
+        let stream: MediaStream | null = null;
+        try {
+          stream = await navigator.mediaDevices.getUserMedia({ video: { facingMode: { ideal: 'environment' } } });
+        } catch (err) {
+          stream = await navigator.mediaDevices.getUserMedia({ video: true });
+        }
         setHasCameraPermission(true);
 
         if (videoRef.current) {
@@ -77,9 +83,10 @@ export default function PosePerfectApp() {
     if (appState !== 'GUIDING') return;
 
     const getScore = async () => {
+      // Send actual skeletons to the scoring action for deterministic comparison
       const { poseMatchScore, feedback } = await getPoseMatchScore({
-        userPose: JSON.stringify({ matchAmount: poseMatch }),
-        suggestedPose: JSON.stringify(perfectPose),
+        userPose: JSON.stringify(userSkeleton),
+        suggestedPose: JSON.stringify(selectedPose?.skeleton || perfectPose),
       });
       setScore(poseMatchScore);
       setFeedback(feedback);
@@ -111,7 +118,7 @@ export default function PosePerfectApp() {
     }
   }, [appState, toast]);
 
-  const handlePoseSelect = (pose: string) => {
+  const handlePoseSelect = (pose: {id: string; title: string; skeleton: any}) => {
     setSelectedPose(pose);
     setAppState('GUIDING');
     setIsSheetOpen(false);

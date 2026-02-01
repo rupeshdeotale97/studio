@@ -13,12 +13,19 @@ import {
 } from '@/components/ui/sheet';
 import { Button } from '@/components/ui/button';
 import { getPoseSuggestions } from '@/app/actions';
-import { Skeleton } from '@/components/ui/skeleton';
+import { skeletonConnections, type Skeleton } from '@/lib/pose-data';
+import { Skeleton as UISkeleton } from '@/components/ui/skeleton';
+
+interface SuggestedPose {
+  id: string;
+  title: string;
+  skeleton: Skeleton;
+}
 
 interface PoseSuggestionsProps {
   isOpen: boolean;
   onOpenChange: (isOpen: boolean) => void;
-  onPoseSelect: (pose: string) => void;
+  onPoseSelect: (pose: SuggestedPose) => void;
 }
 
 type SuggestionState = 'IDLE' | 'LOADING' | 'SHOWING';
@@ -29,16 +36,42 @@ const peopleOptions = [
   { label: 'Group', count: 3, icon: <Users className="h-8 w-8" /> },
 ];
 
+function PosePreview({ skeleton }: { skeleton: Skeleton }) {
+  return (
+    <svg viewBox="0 0 100 100" width={56} height={72} className="rounded-sm bg-muted/30 p-1">
+      {skeletonConnections.map(([a, b]) => {
+        const p1 = skeleton[a as keyof Skeleton];
+        const p2 = skeleton[b as keyof Skeleton];
+        return (
+          <line
+            key={`${a}-${b}`}
+            x1={p1.x}
+            y1={p1.y}
+            x2={p2.x}
+            y2={p2.y}
+            stroke="rgba(255,255,255,0.85)"
+            strokeWidth={1.5}
+            strokeLinecap="round"
+          />
+        );
+      })}
+      {Object.values(skeleton).map((p, i) => (
+        <circle key={i} cx={p.x} cy={p.y} r={1.6} fill="white" />
+      ))}
+    </svg>
+  );
+}
+
 export default function PoseSuggestions({ isOpen, onOpenChange, onPoseSelect }: PoseSuggestionsProps) {
   const [state, setState] = useState<SuggestionState>('IDLE');
-  const [suggestions, setSuggestions] = useState<string[]>([]);
+  const [suggestions, setSuggestions] = useState<SuggestedPose[]>([]);
   const [selectedPeople, setSelectedPeople] = useState<number | null>(null);
 
   const handlePeopleSelect = async (count: number) => {
     setState('LOADING');
     setSelectedPeople(count);
     const poses = await getPoseSuggestions({ numberOfPeople: count });
-    setSuggestions(poses);
+    setSuggestions(poses as SuggestedPose[]);
     setState('SHOWING');
   };
 
@@ -85,7 +118,7 @@ export default function PoseSuggestions({ isOpen, onOpenChange, onPoseSelect }: 
               </motion.div>
             )}
 
-            {state === 'LOADING' && (
+                {state === 'LOADING' && (
               <motion.div
                 key="loading"
                 initial={{ opacity: 0 }}
@@ -93,8 +126,8 @@ export default function PoseSuggestions({ isOpen, onOpenChange, onPoseSelect }: 
                 exit={{ opacity: 0 }}
                 className="flex flex-col items-center justify-center gap-4 h-48"
               >
-                <Loader className="h-8 w-8 animate-spin text-primary" />
-                <Skeleton className="h-4 w-48" />
+                    <Loader className="h-8 w-8 animate-spin text-primary" />
+                    <UISkeleton className="h-4 w-48" />
               </motion.div>
             )}
 
@@ -106,16 +139,19 @@ export default function PoseSuggestions({ isOpen, onOpenChange, onPoseSelect }: 
                 transition={{ staggerChildren: 0.1 }}
                 className="flex flex-col gap-2"
               >
-                {suggestions.map((pose, i) => (
+                {suggestions.map((suggestion, i) => (
                   <motion.button
-                    key={pose}
+                    key={suggestion.id}
                     initial={{ opacity: 0, y: 20 }}
                     animate={{ opacity: 1, y: 0 }}
                     transition={{ delay: i * 0.05 }}
-                    onClick={() => onPoseSelect(pose)}
+                    onClick={() => onPoseSelect(suggestion)}
                     className="w-full text-left p-4 rounded-lg bg-secondary hover:bg-primary/10 flex justify-between items-center"
                   >
-                    <span className="font-medium text-secondary-foreground">{pose}</span>
+                    <div className="flex items-center gap-3">
+                      <PosePreview skeleton={suggestion.skeleton} />
+                      <span className="font-medium text-secondary-foreground">{suggestion.title}</span>
+                    </div>
                     <ChevronRight className="h-5 w-5 text-muted-foreground" />
                   </motion.button>
                 ))}
