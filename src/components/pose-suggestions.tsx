@@ -2,7 +2,7 @@
 
 import { useState } from 'react';
 import { AnimatePresence, motion } from 'framer-motion';
-import { Loader, User, Users, ChevronRight } from 'lucide-react';
+import { Loader, User, Users, Heart } from 'lucide-react';
 
 import {
   Sheet,
@@ -13,7 +13,7 @@ import {
 } from '@/components/ui/sheet';
 import { Button } from '@/components/ui/button';
 import { getPoseSuggestions } from '@/app/actions';
-import { skeletonConnections, type Skeleton } from '@/lib/pose-data';
+import { type Skeleton } from '@/lib/pose-data';
 import { Skeleton as UISkeleton } from '@/components/ui/skeleton';
 
 interface SuggestedPose {
@@ -31,36 +31,10 @@ interface PoseSuggestionsProps {
 type SuggestionState = 'IDLE' | 'LOADING' | 'SHOWING';
 
 const peopleOptions = [
-  { label: 'Solo', count: 1, icon: <User className="h-8 w-8" /> },
-  { label: 'Couple', count: 2, icon: <Users className="h-8 w-8" /> },
-  { label: 'Group', count: 3, icon: <Users className="h-8 w-8" /> },
+  { label: 'Solo', count: 1, icon: <User className="h-5 w-5" />, color: 'bg-blue-50 hover:bg-blue-100 border-blue-200' },
+  { label: 'Couple', count: 2, icon: <Heart className="h-5 w-5 fill-rose-500 text-rose-500" />, color: 'bg-rose-50 hover:bg-rose-100 border-rose-200' },
+  { label: 'Group', count: 3, icon: <Users className="h-5 w-5" />, color: 'bg-purple-50 hover:bg-purple-100 border-purple-200' },
 ];
-
-function PosePreview({ skeleton }: { skeleton: Skeleton }) {
-  return (
-    <svg viewBox="0 0 100 100" className="rounded-sm bg-muted/30 p-1 w-14 h-20" preserveAspectRatio="xMidYMid meet">
-      {skeletonConnections.map(([a, b]) => {
-        const p1 = skeleton[a as keyof Skeleton];
-        const p2 = skeleton[b as keyof Skeleton];
-        return (
-          <line
-            key={`${a}-${b}`}
-            x1={p1.x}
-            y1={p1.y}
-            x2={p2.x}
-            y2={p2.y}
-            stroke="rgba(255,255,255,0.85)"
-            strokeWidth={1.5}
-            strokeLinecap="round"
-          />
-        );
-      })}
-      {Object.values(skeleton).map((p, i) => (
-        <circle key={i} cx={p.x} cy={p.y} r={1.6} fill="white" />
-      ))}
-    </svg>
-  );
-}
 
 export default function PoseSuggestions({ isOpen, onOpenChange, onPoseSelect }: PoseSuggestionsProps) {
   const [state, setState] = useState<SuggestionState>('IDLE');
@@ -85,13 +59,13 @@ export default function PoseSuggestions({ isOpen, onOpenChange, onPoseSelect }: 
 
   return (
     <Sheet open={isOpen} onOpenChange={onOpenChange} onAnimationEnd={resetState}>
-      <SheetContent side="bottom" className="rounded-t-lg">
-        <SheetHeader>
-          <SheetTitle>Find a Pose</SheetTitle>
-          <SheetDescription>
+      <SheetContent side="bottom" className="rounded-t-3xl bg-gradient-to-br from-white to-rose-50/50">
+        <SheetHeader className="mb-6">
+          <SheetTitle className="text-2xl font-bold text-gray-900">Choose Your Pose</SheetTitle>
+          <SheetDescription className="text-gray-600 text-base">
             {state === 'IDLE'
-              ? 'How many people are in the shot?'
-              : `Great! Here are some ideas for your photo.`}
+              ? 'How many people are in your shot?'
+              : `Beautiful poses tailored for you`}
           </SheetDescription>
         </SheetHeader>
         <div className="py-4">
@@ -99,35 +73,36 @@ export default function PoseSuggestions({ isOpen, onOpenChange, onPoseSelect }: 
             {state === 'IDLE' && (
               <motion.div
                 key="people-select"
-                initial={{ opacity: 0, x: -50 }}
-                animate={{ opacity: 1, x: 0 }}
-                exit={{ opacity: 0, x: 50 }}
-                className="grid grid-cols-3 gap-4"
+                initial={{ opacity: 0, y: 20 }}
+                animate={{ opacity: 1, y: 0 }}
+                exit={{ opacity: 0, y: -20 }}
+                className="grid grid-cols-3 gap-3"
               >
                 {peopleOptions.map(opt => (
-                  <Button
+                  <motion.button
                     key={opt.label}
-                    variant="outline"
-                    className="h-24 flex flex-col gap-2"
+                    whileHover={{ scale: 1.05 }}
+                    whileTap={{ scale: 0.95 }}
                     onClick={() => handlePeopleSelect(opt.count)}
+                    className={`p-4 rounded-2xl border-2 ${opt.color} transition-all duration-200 flex flex-col items-center gap-2 font-medium text-sm text-gray-700`}
                   >
                     {opt.icon}
                     <span>{opt.label}</span>
-                  </Button>
+                  </motion.button>
                 ))}
               </motion.div>
             )}
 
-                {state === 'LOADING' && (
+            {state === 'LOADING' && (
               <motion.div
                 key="loading"
                 initial={{ opacity: 0 }}
                 animate={{ opacity: 1 }}
                 exit={{ opacity: 0 }}
-                className="flex flex-col items-center justify-center gap-4 h-48"
+                className="flex flex-col items-center justify-center gap-4 h-40"
               >
-                    <Loader className="h-8 w-8 animate-spin text-primary" />
-                    <UISkeleton className="h-4 w-48" />
+                <Loader className="h-6 w-6 animate-spin text-rose-500" />
+                <UISkeleton className="h-4 w-48" />
               </motion.div>
             )}
 
@@ -136,25 +111,29 @@ export default function PoseSuggestions({ isOpen, onOpenChange, onPoseSelect }: 
                 key="suggestions"
                 initial={{ opacity: 0 }}
                 animate={{ opacity: 1 }}
-                transition={{ staggerChildren: 0.06 }}
-                className="flex flex-col gap-2"
+                transition={{ staggerChildren: 0.05 }}
+                className="flex flex-col gap-3 max-h-96 overflow-y-auto"
               >
                 {suggestions.map((suggestion, i) => (
                   <motion.button
                     key={suggestion.id}
-                    initial={{ opacity: 0, y: 12, scale: 0.98 }}
-                    animate={{ opacity: 1, y: 0, scale: 1 }}
-                    whileHover={{ scale: 1.02 }}
-                    whileTap={{ scale: 0.99 }}
-                    transition={{ delay: i * 0.03, type: 'spring', stiffness: 260, damping: 22 }}
+                    initial={{ opacity: 0, x: -20 }}
+                    animate={{ opacity: 1, x: 0 }}
+                    whileHover={{ scale: 1.02, backgroundColor: 'rgba(244, 114, 182, 0.05)' }}
+                    whileTap={{ scale: 0.98 }}
+                    transition={{ delay: i * 0.05, type: 'spring', stiffness: 300, damping: 30 }}
                     onClick={() => onPoseSelect(suggestion)}
-                    className="w-full text-left p-4 rounded-lg bg-secondary hover:bg-primary/10 flex justify-between items-center"
+                    className="w-full text-left p-4 rounded-2xl bg-white border border-rose-100 hover:border-rose-300 shadow-sm hover:shadow-md transition-all duration-200"
                   >
-                    <div className="flex items-center gap-3">
-                      <PosePreview skeleton={suggestion.skeleton} />
-                      <span className="font-medium text-secondary-foreground">{suggestion.title}</span>
+                    <div className="flex items-center justify-between">
+                      <div>
+                        <h3 className="font-semibold text-gray-900">{suggestion.title}</h3>
+                        <p className="text-sm text-gray-500 mt-1">Tap to start guiding</p>
+                      </div>
+                      <div className="text-rose-400">
+                        <Heart className="h-5 w-5 fill-current" />
+                      </div>
                     </div>
-                    <ChevronRight className="h-5 w-5 text-muted-foreground" />
                   </motion.button>
                 ))}
               </motion.div>

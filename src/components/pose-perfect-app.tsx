@@ -10,17 +10,9 @@ import { cn } from '@/lib/utils';
 import { Button } from '@/components/ui/button';
 import { Slider } from '@/components/ui/slider';
 import { useToast } from '@/hooks/use-toast';
-import { getPoseMatchScore } from '@/app/actions';
 import { AppLogo } from '@/components/icons';
 import PoseSuggestions from '@/components/pose-suggestions';
 import PoseScore from '@/components/pose-score';
-import {
-  initialPose,
-  perfectPose,
-  interpolateSkeletons,
-  skeletonConnections,
-  type Skeleton
-} from '@/lib/pose-data';
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
 
 type AppState = 'IDLE' | 'SUGGESTING' | 'GUIDING' | 'CAPTURING' | 'CAPTURED';
@@ -32,7 +24,6 @@ export default function PosePerfectApp() {
   const [feedback, setFeedback] = useState('Select number of people to start.');
   const [isSheetOpen, setIsSheetOpen] = useState(false);
   const [selectedPose, setSelectedPose] = useState<{id: string; title: string; skeleton: any} | null>(null);
-  const [showSkeleton, setShowSkeleton] = useState(true);
   const [showGhost, setShowGhost] = useState(true);
   const [flash, setFlash] = useState(false);
   const [hasCameraPermission, setHasCameraPermission] = useState<boolean | null>(null);
@@ -46,10 +37,6 @@ export default function PosePerfectApp() {
     return PlaceHolderImages.find(p => p.id.startsWith(poseId)) || null;
   }, [selectedPose]);
 
-  const userSkeleton: Skeleton = useMemo(
-    () => interpolateSkeletons(initialPose, perfectPose, poseMatch),
-    [poseMatch]
-  );
   
   useEffect(() => {
     const stopExistingStream = () => {
@@ -98,23 +85,6 @@ export default function PosePerfectApp() {
   const toggleCameraFacing = () => {
     setCameraFacing(prev => (prev === 'environment' ? 'user' : 'environment'));
   };
-
-  useEffect(() => {
-    if (appState !== 'GUIDING') return;
-
-    const getScore = async () => {
-      // Send actual skeletons to the scoring action for deterministic comparison
-      const { poseMatchScore, feedback } = await getPoseMatchScore({
-        userPose: JSON.stringify(userSkeleton),
-        suggestedPose: JSON.stringify(selectedPose?.skeleton || perfectPose),
-      });
-      setScore(poseMatchScore);
-      setFeedback(feedback);
-    };
-
-    const debounce = setTimeout(getScore, 100);
-    return () => clearTimeout(debounce);
-  }, [poseMatch, appState]);
   
   useEffect(() => {
     if (appState === 'CAPTURING') {
@@ -167,7 +137,7 @@ export default function PosePerfectApp() {
       const file = new File([blob], `poseperfect-${Date.now()}.jpg`, { type: 'image/jpeg' });
 
       // Try Web Share API with files (saves to gallery via share target on many mobiles)
-      if (navigator.canShare && (navigator as any).canShare({ files: [file] })) {
+      if (navigator?.canShare && (navigator as any).canShare({ files: [file] })) {
         try {
           await (navigator as any).share({ files: [file], title: 'PosePerfect Photo' });
         } catch (shareErr) {
@@ -206,12 +176,12 @@ export default function PosePerfectApp() {
     <main className="h-screen w-screen bg-black flex items-center justify-center">
       <div className="relative w-full h-screen md:max-w-[420px] md:h-[840px] bg-background overflow-hidden rounded-none md:rounded-lg shadow-2xl">
         {/* Header */}
-        <header className="absolute top-0 left-0 right-0 z-20 flex items-center justify-between p-3 md:p-4 bg-gradient-to-b from-black/50 to-transparent">
+        <header className="absolute top-0 left-0 right-0 z-20 flex items-center justify-between p-3 md:p-4 bg-gradient-to-b from-black/20 to-transparent">
           <div className="flex items-center gap-2 text-white">
             <AppLogo className="h-6 w-6" />
             <h1 className="font-bold text-lg tracking-tight">PosePerfect</h1>
           </div>
-          <Button variant="ghost" size="icon" className="text-white hover:bg-white/20" onClick={handleReset}>
+          <Button variant="ghost" size="icon" className="text-white hover:bg-white/20 rounded-full transition-all" onClick={handleReset}>
             <RefreshCw className="h-5 w-5" />
           </Button>
         </header>
@@ -230,69 +200,29 @@ export default function PosePerfectApp() {
             </div>
           )}
           <AnimatePresence>
-            {appState === 'GUIDING' && showGhost && ghostImage && (
+            {appState === 'GUIDING' && showGhost && (
               <motion.div
                 initial={{ opacity: 0, scale: 0.98 }}
-                animate={{ opacity: 0.55, scale: 1 }}
+                animate={{ opacity: 1, scale: 1 }}
                 exit={{ opacity: 0, scale: 0.98 }}
                 transition={{ duration: 0.45, ease: 'easeOut' }}
-                className="absolute inset-0 pointer-events-none"
+                className="absolute inset-0 pointer-events-none flex items-center justify-center"
               >
-                <Image src={ghostImage.imageUrl} alt="Pose Guide" layout="fill" objectFit="contain" data-ai-hint={ghostImage.imageHint} />
+                {ghostImage && (
+                  <motion.div initial={{ opacity: 0 }} animate={{ opacity: 0.55 }} className="absolute inset-0">
+                    <Image src={ghostImage.imageUrl} alt="Pose Guide" layout="fill" objectFit="contain" data-ai-hint={ghostImage.imageHint} />
+                  </motion.div>
+                )}
               </motion.div>
             )}
           </AnimatePresence>
           
-          <AnimatePresence>
-            {appState === 'GUIDING' && showSkeleton && (
-              <motion.svg
-                initial={{ opacity: 0 }}
-                animate={{ opacity: 1 }}
-                exit={{ opacity: 0 }}
-                viewBox="0 0 100 100"
-                className="absolute inset-0 w-full h-full"
-                preserveAspectRatio="xMidYMid meet"
-              >
-                {skeletonConnections.map(([startKey, endKey], idx) => {
-                  const p1 = userSkeleton[startKey];
-                  const p2 = userSkeleton[endKey];
-                  const len = Math.hypot(p2.x - p1.x, p2.y - p1.y);
-                  const dash = `${len} ${len}`;
-                  // @ts-expect-error framer-motion SVG line
-                  return (
-                    <motion.line
-                      key={`${startKey}-${endKey}-${idx}`}
-                      x1={p1.x}
-                      y1={p1.y}
-                      x2={p2.x}
-                      y2={p2.y}
-                      stroke="url(#skeleton-gradient)"
-                      strokeWidth={1}
-                      strokeLinecap="round"
-                      strokeDasharray={dash}
-                      initial={{ strokeDashoffset: len }}
-                      animate={{ strokeDashoffset: 0 }}
-                      transition={{ delay: idx * 0.02, duration: 0.35, ease: 'easeOut' }}
-                    />
-                  );
-                })}
-                {Object.values(userSkeleton).map((p, i) => (
-                  <motion.circle key={i} cx={p.x} cy={p.y} r="1.5" fill="hsl(var(--primary))" initial={{ scale: 0.8, opacity: 0 }} animate={{ scale: 1, opacity: 1 }} transition={{ delay: 0.1 + i * 0.01 }} />
-                ))}
-                <defs>
-                    <linearGradient id="skeleton-gradient" x1="0%" y1="0%" x2="0%" y2="100%">
-                        <stop offset="0%" style={{stopColor: 'hsl(var(--primary))', stopOpacity: 1}} />
-                        <stop offset="100%" style={{stopColor: 'hsl(var(--accent))', stopOpacity: 1}} />
-                    </linearGradient>
-                </defs>
-              </motion.svg>
-            )}
-          </AnimatePresence>
           
           <AnimatePresence>
             {flash && <motion.div initial={{opacity: 0}} animate={{opacity: 1}} exit={{opacity: 0}} transition={{duration: 0.15}} className="absolute inset-0 bg-white" />}
           </AnimatePresence>
         </div>
+
 
         {/* UI Overlays */}
         <div className="absolute inset-0 z-10 flex flex-col justify-between p-4 md:p-6 text-white pointer-events-none">
@@ -355,37 +285,76 @@ export default function PosePerfectApp() {
 
         {/* Footer controls */}
           <footer className={cn(
-            "absolute bottom-0 left-0 right-0 z-20 flex items-center justify-center p-4 md:p-6 bg-gradient-to-t from-black/50 to-transparent",
+            "absolute bottom-0 left-0 right-0 z-20 flex items-center justify-center p-4 md:p-6 bg-gradient-to-t from-black/60 via-black/30 to-transparent",
             (appState !== 'IDLE' && appState !== 'SUGGESTING') && 'justify-between'
         )}>
           {appState === 'IDLE' || appState === 'SUGGESTING' ? (
-            <Button size="lg" className="h-14 w-full max-w-xs md:h-16 md:w-48 rounded-full shadow-lg bg-primary text-primary-foreground hover:bg-primary/90" onClick={() => setIsSheetOpen(true)}>
-              <Sparkles className="mr-2 h-5 w-5" />
-              Find my Pose
-            </Button>
+            <motion.div
+              initial={{ scale: 0.9, opacity: 0 }}
+              animate={{ scale: 1, opacity: 1 }}
+              transition={{ delay: 0.3 }}
+            >
+              <Button size="lg" className="h-14 px-8 md:h-16 md:px-10 rounded-full shadow-xl bg-gradient-to-r from-rose-500 to-pink-500 hover:from-rose-600 hover:to-pink-600 text-white font-semibold flex items-center gap-2" onClick={() => setIsSheetOpen(true)}>
+                <Sparkles className="h-5 w-5" />
+                Find my Pose
+              </Button>
+            </motion.div>
           ) : (
             <Fragment>
-                <div className="flex gap-2">
-                    <Button variant="ghost" size="icon" className="text-white hover:bg-white/20 rounded-full" onClick={() => setShowSkeleton(!showSkeleton)}>
-                        <svg className="h-6 w-6" xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M22 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg>
-                        {!showSkeleton && <X className="h-3 w-3 absolute bottom-1 right-1 bg-destructive text-destructive-foreground rounded-full p-0.5" />}
-                    </Button>
-                    <Button variant="ghost" size="icon" className="text-white hover:bg-white/20 rounded-full" onClick={() => setShowGhost(!showGhost)}>
-                        <svg className="h-6 w-6" xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>
-                        {!showGhost && <X className="h-3 w-3 absolute bottom-1 right-1 bg-destructive text-destructive-foreground rounded-full p-0.5" />}
-                    </Button>
-                </div>
-                 <div className="flex items-center gap-2">
-                   <Button variant="ghost" size="icon" className="text-white hover:bg-white/20 rounded-full p-2" onClick={toggleCameraFacing} aria-label="Flip camera">
-                     <RotateCw className="h-5 w-5" />
-                   </Button>
-                   <Button variant="outline" size="icon" className="h-12 w-12 md:h-16 md:w-16 rounded-full border-4 border-white/50 bg-white/20 hover:bg-white/30" onClick={capturePhoto} aria-label="Take photo">
-                     <Camera className="h-7 w-7 text-white" />
-                   </Button>
-                 </div>
-                <Button variant="ghost" size="icon" className="text-white hover:bg-white/20 rounded-full h-10 w-10 md:h-12 md:w-12" onClick={() => setIsSheetOpen(true)}>
-                    <Users className="h-6 w-6"/>
-                </Button>
+                <motion.div 
+                  className="flex gap-2"
+                  initial={{ x: -20, opacity: 0 }}
+                  animate={{ x: 0, opacity: 1 }}
+                  transition={{ delay: 0.1 }}
+                >
+                    <motion.button 
+                      whileHover={{ scale: 1.1 }}
+                      whileTap={{ scale: 0.95 }}
+                      onClick={() => setShowGhost(!showGhost)}
+                      className="h-10 w-10 md:h-12 md:w-12 rounded-full bg-white/20 hover:bg-white/30 backdrop-blur-sm text-white transition-all duration-200 flex items-center justify-center relative"
+                    >
+                        <svg className="h-5 w-5 md:h-6 md:w-6" xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>
+                        {!showGhost && <X className="h-2.5 w-2.5 absolute bottom-0.5 right-0.5 bg-rose-500 text-white rounded-full p-0.5" />}
+                    </motion.button>
+                </motion.div>
+                 <motion.div 
+                  className="flex items-center gap-3"
+                  initial={{ y: 20, opacity: 0 }}
+                  animate={{ y: 0, opacity: 1 }}
+                  transition={{ delay: 0.2 }}
+                >
+                   <motion.button 
+                    whileHover={{ scale: 1.1 }}
+                    whileTap={{ scale: 0.95 }}
+                    onClick={toggleCameraFacing} 
+                    className="h-10 w-10 md:h-12 md:w-12 rounded-full bg-white/20 hover:bg-white/30 backdrop-blur-sm text-white transition-all duration-200 flex items-center justify-center"
+                   >
+                     <RotateCw className="h-5 w-5 md:h-6 md:w-6" />
+                   </motion.button>
+                  <motion.button 
+                    whileHover={{ scale: 1.08 }}
+                    whileTap={{ scale: 0.92 }}
+                    onClick={capturePhoto} 
+                    className="h-14 w-14 md:h-16 md:w-16 rounded-full border-4 border-white/60 bg-gradient-to-br from-rose-500 to-pink-500 hover:from-rose-600 hover:to-pink-600 shadow-lg text-white transition-all duration-200 flex items-center justify-center"
+                  >
+                     <Camera className="h-7 w-7 md:h-8 md:w-8" />
+                   </motion.button>
+                 </motion.div>
+                <motion.div 
+                  className="flex items-center gap-2"
+                  initial={{ x: 20, opacity: 0 }}
+                  animate={{ x: 0, opacity: 1 }}
+                  transition={{ delay: 0.1 }}
+                >
+                  <motion.button 
+                    whileHover={{ scale: 1.1 }}
+                    whileTap={{ scale: 0.95 }}
+                    onClick={() => setIsSheetOpen(true)}
+                    className="h-10 w-10 md:h-12 md:w-12 rounded-full bg-white/20 hover:bg-white/30 backdrop-blur-sm text-white transition-all duration-200 flex items-center justify-center"
+                  >
+                    <Users className="h-5 w-5 md:h-6 md:w-6"/>
+                  </motion.button>
+                </motion.div>
             </Fragment>
           )}
         </footer>

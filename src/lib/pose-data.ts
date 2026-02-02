@@ -60,6 +60,87 @@ export const perfectPose: Skeleton = {
   rightAnkle: { x: 30, y: 85 },
 };
 
+// Couple poses
+export const coupleSideByScene: Skeleton = {
+  nose: { x: 35, y: 22 },
+  leftEye: { x: 37, y: 21 },
+  rightEye: { x: 33, y: 21 },
+  leftEar: { x: 40, y: 23 },
+  rightEar: { x: 30, y: 23 },
+  leftShoulder: { x: 50, y: 32 },
+  rightShoulder: { x: 20, y: 32 },
+  leftElbow: { x: 55, y: 47 },
+  rightElbow: { x: 15, y: 47 },
+  leftWrist: { x: 45, y: 62 },
+  rightWrist: { x: 25, y: 62 },
+  leftHip: { x: 45, y: 57 },
+  rightHip: { x: 25, y: 57 },
+  leftKnee: { x: 48, y: 72 },
+  rightKnee: { x: 22, y: 72 },
+  leftAnkle: { x: 50, y: 87 },
+  rightAnkle: { x: 20, y: 87 },
+};
+
+export const coupleHeartShape: Skeleton = {
+  nose: { x: 45, y: 25 },
+  leftEye: { x: 47, y: 24 },
+  rightEye: { x: 43, y: 24 },
+  leftEar: { x: 50, y: 26 },
+  rightEar: { x: 40, y: 26 },
+  leftShoulder: { x: 65, y: 35 },
+  rightShoulder: { x: 25, y: 35 },
+  leftElbow: { x: 75, y: 50 },
+  rightElbow: { x: 15, y: 50 },
+  leftWrist: { x: 80, y: 65 },
+  rightWrist: { x: 10, y: 65 },
+  leftHip: { x: 55, y: 60 },
+  rightHip: { x: 35, y: 60 },
+  leftKnee: { x: 58, y: 75 },
+  rightKnee: { x: 32, y: 75 },
+  leftAnkle: { x: 60, y: 90 },
+  rightAnkle: { x: 30, y: 90 },
+};
+
+export const coupleBackToBack: Skeleton = {
+  nose: { x: 50, y: 20 },
+  leftEye: { x: 52, y: 19 },
+  rightEye: { x: 48, y: 19 },
+  leftEar: { x: 56, y: 21 },
+  rightEar: { x: 44, y: 21 },
+  leftShoulder: { x: 72, y: 32 },
+  rightShoulder: { x: 28, y: 32 },
+  leftElbow: { x: 85, y: 47 },
+  rightElbow: { x: 15, y: 47 },
+  leftWrist: { x: 82, y: 62 },
+  rightWrist: { x: 18, y: 62 },
+  leftHip: { x: 65, y: 58 },
+  rightHip: { x: 35, y: 58 },
+  leftKnee: { x: 68, y: 73 },
+  rightKnee: { x: 32, y: 73 },
+  leftAnkle: { x: 70, y: 88 },
+  rightAnkle: { x: 30, y: 88 },
+};
+
+export const coupleEmbrace: Skeleton = {
+  nose: { x: 48, y: 20 },
+  leftEye: { x: 50, y: 19 },
+  rightEye: { x: 46, y: 19 },
+  leftEar: { x: 54, y: 21 },
+  rightEar: { x: 42, y: 21 },
+  leftShoulder: { x: 68, y: 33 },
+  rightShoulder: { x: 32, y: 33 },
+  leftElbow: { x: 70, y: 48 },
+  rightElbow: { x: 30, y: 48 },
+  leftWrist: { x: 65, y: 63 },
+  rightWrist: { x: 35, y: 63 },
+  leftHip: { x: 60, y: 58 },
+  rightHip: { x: 40, y: 58 },
+  leftKnee: { x: 62, y: 73 },
+  rightKnee: { x: 38, y: 73 },
+  leftAnkle: { x: 64, y: 88 },
+  rightAnkle: { x: 36, y: 88 },
+};
+
 export const skeletonConnections: (keyof Skeleton)[][] = [
   ['leftShoulder', 'rightShoulder'],
   ['leftShoulder', 'leftElbow'],
