@@ -136,15 +136,17 @@ export default function PoseSuggestions({ isOpen, onOpenChange, onPoseSelect }: 
                 key="suggestions"
                 initial={{ opacity: 0 }}
                 animate={{ opacity: 1 }}
-                transition={{ staggerChildren: 0.1 }}
+                transition={{ staggerChildren: 0.06 }}
                 className="flex flex-col gap-2"
               >
                 {suggestions.map((suggestion, i) => (
                   <motion.button
                     key={suggestion.id}
-                    initial={{ opacity: 0, y: 20 }}
-                    animate={{ opacity: 1, y: 0 }}
-                    transition={{ delay: i * 0.05 }}
+                    initial={{ opacity: 0, y: 12, scale: 0.98 }}
+                    animate={{ opacity: 1, y: 0, scale: 1 }}
+                    whileHover={{ scale: 1.02 }}
+                    whileTap={{ scale: 0.99 }}
+                    transition={{ delay: i * 0.03, type: 'spring', stiffness: 260, damping: 22 }}
                     onClick={() => onPoseSelect(suggestion)}
                     className="w-full text-left p-4 rounded-lg bg-secondary hover:bg-primary/10 flex justify-between items-center"
                   >

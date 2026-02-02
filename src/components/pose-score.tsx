@@ -1,6 +1,6 @@
 "use client";
 
-import { motion, useMotionValue, useTransform, animate } from 'framer-motion';
+import { motion, useMotionValue, animate } from 'framer-motion';
 import { Check, Camera, Sparkles } from 'lucide-react';
 
 interface PoseScoreProps {
@@ -23,6 +23,10 @@ export default function PoseScore({ score, state }: PoseScoreProps) {
 
   return (
     <div className="relative w-32 h-32 flex items-center justify-center">
+      {/* capture burst */}
+      {state === 'CAPTURING' && (
+        <motion.div initial={{ scale: 0.6, opacity: 0 }} animate={{ scale: 1.8, opacity: 0.08 }} transition={{ duration: 0.45 }} className="absolute inset-0 rounded-full bg-white" />
+      )}
       <svg className="absolute w-full h-full" viewBox="0 0 100 100">
         <circle
           cx="50"
@@ -50,8 +54,8 @@ export default function PoseScore({ score, state }: PoseScoreProps) {
         />
       </svg>
       <div className="relative flex flex-col items-center justify-center text-white font-bold text-3xl">
-        {state === 'CAPTURING' && <motion.div initial={{scale:0.5, opacity:0}} animate={{scale:1, opacity:1}}><Camera className="w-10 h-10" /></motion.div>}
-        {state === 'CAPTURED' && <motion.div initial={{scale:0.5, opacity:0}} animate={{scale:1, opacity:1}}><Check className="w-12 h-12 text-green-400" /></motion.div>}
+        {state === 'CAPTURING' && <motion.div initial={{scale:0.6, opacity:0}} animate={{scale:1, opacity:1}} transition={{ type: 'spring', stiffness: 300, damping: 20 }}><Camera className="w-10 h-10" /></motion.div>}
+        {state === 'CAPTURED' && <motion.div initial={{scale:0.5, opacity:0}} animate={{scale:1.15, opacity:1}} transition={{ type: 'spring', stiffness: 300, damping: 18 }}><Check className="w-12 h-12 text-green-400" /></motion.div>}
         {state === 'GUIDING' && (
           <>
                 <motion.span

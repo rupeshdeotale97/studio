@@ -232,10 +232,11 @@ export default function PosePerfectApp() {
           <AnimatePresence>
             {appState === 'GUIDING' && showGhost && ghostImage && (
               <motion.div
-                initial={{ opacity: 0 }}
-                animate={{ opacity: 0.5 }}
-                exit={{ opacity: 0 }}
-                className="absolute inset-0"
+                initial={{ opacity: 0, scale: 0.98 }}
+                animate={{ opacity: 0.55, scale: 1 }}
+                exit={{ opacity: 0, scale: 0.98 }}
+                transition={{ duration: 0.45, ease: 'easeOut' }}
+                className="absolute inset-0 pointer-events-none"
               >
                 <Image src={ghostImage.imageUrl} alt="Pose Guide" layout="fill" objectFit="contain" data-ai-hint={ghostImage.imageHint} />
               </motion.div>
@@ -252,13 +253,31 @@ export default function PosePerfectApp() {
                 className="absolute inset-0 w-full h-full"
                 preserveAspectRatio="xMidYMid meet"
               >
-                {skeletonConnections.map(([startKey, endKey]) => {
+                {skeletonConnections.map(([startKey, endKey], idx) => {
                   const p1 = userSkeleton[startKey];
                   const p2 = userSkeleton[endKey];
-                  return <line key={`${startKey}-${endKey}`} x1={p1.x} y1={p1.y} x2={p2.x} y2={p2.y} stroke="url(#skeleton-gradient)" strokeWidth="1" strokeLinecap="round" />;
+                  const len = Math.hypot(p2.x - p1.x, p2.y - p1.y);
+                  const dash = `${len} ${len}`;
+                  // @ts-expect-error framer-motion SVG line
+                  return (
+                    <motion.line
+                      key={`${startKey}-${endKey}-${idx}`}
+                      x1={p1.x}
+                      y1={p1.y}
+                      x2={p2.x}
+                      y2={p2.y}
+                      stroke="url(#skeleton-gradient)"
+                      strokeWidth={1}
+                      strokeLinecap="round"
+                      strokeDasharray={dash}
+                      initial={{ strokeDashoffset: len }}
+                      animate={{ strokeDashoffset: 0 }}
+                      transition={{ delay: idx * 0.02, duration: 0.35, ease: 'easeOut' }}
+                    />
+                  );
                 })}
                 {Object.values(userSkeleton).map((p, i) => (
-                  <circle key={i} cx={p.x} cy={p.y} r="1.5" fill="hsl(var(--primary))" />
+                  <motion.circle key={i} cx={p.x} cy={p.y} r="1.5" fill="hsl(var(--primary))" initial={{ scale: 0.8, opacity: 0 }} animate={{ scale: 1, opacity: 1 }} transition={{ delay: 0.1 + i * 0.01 }} />
                 ))}
                 <defs>
                     <linearGradient id="skeleton-gradient" x1="0%" y1="0%" x2="0%" y2="100%">
