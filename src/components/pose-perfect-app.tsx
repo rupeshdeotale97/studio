@@ -3,7 +3,7 @@
 import { useState, useEffect, useMemo, useCallback, Fragment, useRef } from 'react';
 import Image from 'next/image';
 import { AnimatePresence, motion } from 'framer-motion';
-import { Camera, Check, RefreshCw, Sparkles, Users, X } from 'lucide-react';
+import { Camera, Check, RefreshCw, Sparkles, Users, X, RotateCw } from 'lucide-react';
 
 import { PlaceHolderImages } from '@/lib/placeholder-images';
 import { cn } from '@/lib/utils';
@@ -36,6 +36,7 @@ export default function PosePerfectApp() {
   const [showGhost, setShowGhost] = useState(true);
   const [flash, setFlash] = useState(false);
   const [hasCameraPermission, setHasCameraPermission] = useState<boolean | null>(null);
+  const [cameraFacing, setCameraFacing] = useState<'user' | 'environment'>('environment');
   const videoRef = useRef<HTMLVideoElement>(null);
   const { toast } = useToast();
 
@@ -51,12 +52,25 @@ export default function PosePerfectApp() {
   );
   
   useEffect(() => {
+    const stopExistingStream = () => {
+      try {
+        const current = videoRef.current?.srcObject as MediaStream | null;
+        if (current) {
+          current.getTracks().forEach(t => t.stop());
+          if (videoRef.current) videoRef.current.srcObject = null;
+        }
+      } catch (e) {
+        // ignore
+      }
+    };
+
     const getCameraPermission = async () => {
       try {
-        // Prefer the back (environment) camera when available, fall back to any camera.
+        stopExistingStream();
+        // Try to request the requested facing mode, fall back to any camera
         let stream: MediaStream | null = null;
         try {
-          stream = await navigator.mediaDevices.getUserMedia({ video: { facingMode: { ideal: 'environment' } } });
+          stream = await navigator.mediaDevices.getUserMedia({ video: { facingMode: { ideal: cameraFacing } } });
         } catch (err) {
           stream = await navigator.mediaDevices.getUserMedia({ video: true });
         }
@@ -77,7 +91,13 @@ export default function PosePerfectApp() {
     };
 
     getCameraPermission();
-  }, [toast]);
+
+    return () => stopExistingStream();
+  }, [toast, cameraFacing]);
+
+  const toggleCameraFacing = () => {
+    setCameraFacing(prev => (prev === 'environment' ? 'user' : 'environment'));
+  };
 
   useEffect(() => {
     if (appState !== 'GUIDING') return;
@@ -90,10 +110,6 @@ export default function PosePerfectApp() {
       });
       setScore(poseMatchScore);
       setFeedback(feedback);
-
-      if (poseMatchScore > 0.95 && appState === 'GUIDING') {
-        setAppState('CAPTURING');
-      }
     };
 
     const debounce = setTimeout(getScore, 100);
@@ -125,6 +141,57 @@ export default function PosePerfectApp() {
     setPoseMatch(0);
     setScore(0);
     setFeedback('Align your body with the guide.');
+  };
+
+  const capturePhoto = async () => {
+    if (!videoRef.current) return;
+    try {
+      // show capture flash
+      setAppState('CAPTURING');
+
+      const video = videoRef.current;
+      const canvas = document.createElement('canvas');
+      canvas.width = video.videoWidth || 1280;
+      canvas.height = video.videoHeight || 720;
+      const ctx = canvas.getContext('2d');
+      if (!ctx) throw new Error('Unable to get canvas context');
+
+      // draw the current video frame
+      ctx.drawImage(video, 0, 0, canvas.width, canvas.height);
+
+      // Optionally draw ghost/overlay here if desired (not implemented)
+
+      const blob: Blob | null = await new Promise(res => canvas.toBlob(res, 'image/jpeg', 0.92));
+      if (!blob) throw new Error('Failed to capture image');
+
+      const file = new File([blob], `poseperfect-${Date.now()}.jpg`, { type: 'image/jpeg' });
+
+      // Try Web Share API with files (saves to gallery via share target on many mobiles)
+      if (navigator.canShare && (navigator as any).canShare({ files: [file] })) {
+        try {
+          await (navigator as any).share({ files: [file], title: 'PosePerfect Photo' });
+        } catch (shareErr) {
+          console.warn('Share canceled or failed', shareErr);
+        }
+      } else {
+        // Fallback: trigger download (user can save image to album manually)
+        const url = URL.createObjectURL(blob);
+        const a = document.createElement('a');
+        a.href = url;
+        a.download = file.name;
+        document.body.appendChild(a);
+        a.click();
+        a.remove();
+        URL.revokeObjectURL(url);
+      }
+
+    } catch (err) {
+      console.error('Capture failed', err);
+      toast({ title: 'Capture failed', description: 'Unable to save photo.' });
+      // return to guiding state
+      setAppState('GUIDING');
+      return;
+    }
   };
   
   const handleReset = useCallback(() => {
@@ -289,9 +356,14 @@ export default function PosePerfectApp() {
                         {!showGhost && <X className="h-3 w-3 absolute bottom-1 right-1 bg-destructive text-destructive-foreground rounded-full p-0.5" />}
                     </Button>
                 </div>
-                 <Button variant="outline" size="icon" className="h-12 w-12 md:h-16 md:w-16 rounded-full border-4 border-white/50 bg-white/20 hover:bg-white/30">
-                    <Camera className="h-7 w-7 text-white" />
-                </Button>
+                 <div className="flex items-center gap-2">
+                   <Button variant="ghost" size="icon" className="text-white hover:bg-white/20 rounded-full p-2" onClick={toggleCameraFacing} aria-label="Flip camera">
+                     <RotateCw className="h-5 w-5" />
+                   </Button>
+                   <Button variant="outline" size="icon" className="h-12 w-12 md:h-16 md:w-16 rounded-full border-4 border-white/50 bg-white/20 hover:bg-white/30" onClick={capturePhoto} aria-label="Take photo">
+                     <Camera className="h-7 w-7 text-white" />
+                   </Button>
+                 </div>
                 <Button variant="ghost" size="icon" className="text-white hover:bg-white/20 rounded-full h-10 w-10 md:h-12 md:w-12" onClick={() => setIsSheetOpen(true)}>
                     <Users className="h-6 w-6"/>
                 </Button>
