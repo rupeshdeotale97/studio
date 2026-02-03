@@ -13,6 +13,7 @@ import { useToast } from '@/hooks/use-toast';
 import { AppLogo } from '@/components/icons';
 import PoseSuggestions from '@/components/pose-suggestions';
 import PoseScore from '@/components/pose-score';
+import ARPoseGuide from '@/components/ar-pose-guide';
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
 
 type AppState = 'IDLE' | 'SUGGESTING' | 'GUIDING' | 'CAPTURING' | 'CAPTURED';
@@ -26,6 +27,7 @@ export default function PosePerfectApp() {
   const [selectedPose, setSelectedPose] = useState<{id: string; title: string; skeleton: any} | null>(null);
   const [showGhost, setShowGhost] = useState(true);
   const [flash, setFlash] = useState(false);
+  const [arMode, setArMode] = useState(false);
   const [hasCameraPermission, setHasCameraPermission] = useState<boolean | null>(null);
   const [cameraFacing, setCameraFacing] = useState<'user' | 'environment'>('environment');
   const videoRef = useRef<HTMLVideoElement>(null);
@@ -137,7 +139,7 @@ export default function PosePerfectApp() {
       const file = new File([blob], `poseperfect-${Date.now()}.jpg`, { type: 'image/jpeg' });
 
       // Try Web Share API with files (saves to gallery via share target on many mobiles)
-      if (navigator?.canShare && (navigator as any).canShare({ files: [file] })) {
+      if (typeof navigator !== 'undefined' && 'canShare' in navigator && (navigator as any).canShare?.({ files: [file] })) {
         try {
           await (navigator as any).share({ files: [file], title: 'PosePerfect Photo' });
         } catch (shareErr) {
@@ -197,6 +199,13 @@ export default function PosePerfectApp() {
                   Please allow camera access to use this feature. You may need to grant permissions in your browser settings.
                 </AlertDescription>
               </Alert>
+            </div>
+          )}
+
+          {/* AR mode overlay */}
+          {arMode && (
+            <div className="absolute inset-0 z-30">
+              <ARPoseGuide targetSkeleton={selectedPose?.skeleton ?? null} matchScore={score} />
             </div>
           )}
           <AnimatePresence>
@@ -346,6 +355,15 @@ export default function PosePerfectApp() {
                   animate={{ x: 0, opacity: 1 }}
                   transition={{ delay: 0.1 }}
                 >
+                  <motion.button 
+                    whileHover={{ scale: 1.05 }}
+                    whileTap={{ scale: 0.95 }}
+                    onClick={() => setArMode(v => !v)}
+                    aria-pressed={arMode}
+                    className={`h-10 w-10 md:h-12 md:w-12 rounded-full ${arMode ? 'bg-rose-600' : 'bg-white/20'} hover:bg-white/30 backdrop-blur-sm text-white transition-all duration-200 flex items-center justify-center`}
+                  >
+                    <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5 md:h-6 md:w-6" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round"><path d="M3 7v10a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2V7"/><path d="M8 3v4"/><path d="M16 3v4"/><path d="M3 11h18"/></svg>
+                  </motion.button>
                   <motion.button 
                     whileHover={{ scale: 1.1 }}
                     whileTap={{ scale: 0.95 }}

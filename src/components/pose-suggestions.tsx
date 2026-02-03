@@ -58,8 +58,8 @@ export default function PoseSuggestions({ isOpen, onOpenChange, onPoseSelect }: 
   };
 
   return (
-    <Sheet open={isOpen} onOpenChange={onOpenChange} onAnimationEnd={resetState}>
-      <SheetContent side="bottom" className="rounded-t-3xl bg-gradient-to-br from-white to-rose-50/50">
+    <Sheet open={isOpen} onOpenChange={onOpenChange}>
+      <SheetContent side="bottom" className="rounded-t-3xl bg-gradient-to-br from-white to-rose-50/50" onAnimationEnd={resetState}>
         <SheetHeader className="mb-6">
           <SheetTitle className="text-2xl font-bold text-gray-900">Choose Your Pose</SheetTitle>
           <SheetDescription className="text-gray-600 text-base">
